@@ -36,12 +36,13 @@ jobs:
         USER: ec2-user
       run: |
         mkdir -p ~/.ssh
-        # Menggunakan format standar environment Linux untuk menulis file key
-        echo "$SSH_KEY" > ~/.ssh/id_rsa
+        
+        # Membersihkan karakter ghaib \r (Windows format) jika ada yang terbawa ke GitHub Secrets
+        echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # Jalankan koneksi SSH langsung
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "
+        # Eksekusi SSH dengan timeout 15 detik agar tidak menggantung lama jika gagal
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=15 $USER@$HOST "
           docker stop web-app-container || true && \
           docker rm web-app-container || true && \
           docker pull alka31/web-app-lks:latest && \
