@@ -1,46 +1,7 @@
-name: CI/CD Pipeline LKS Modul 2
-
-on:
-  push:
-    branches: [ "main", "master" ]
-
-jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Code dari GitHub
-      uses: actions/checkout@v4
-
-    - name: Login ke Docker Hub Otomatis
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build Docker Image & Push ke Docker Hub
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        tags: alka31/web-app-lks:latest
-
-  deploy-to-ec2:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    steps:
-    # Menggunakan action khusus untuk mengonfigurasi kunci SSH dengan aman dan otomatis rapi
-    - name: Install SSH Key Otomatis
-      uses: shimataro/ssh-key-action@v2
-      with:
-        key: ${{ secrets.EC2_SSH_KEY }}
-        name: id_rsa
-        known_hosts: unnecessary
-        if_key_exists: replace
-
-    - name: Kirim Perintah Deploy ke EC2
+- name: Kirim Perintah Deploy ke EC2
       env:
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
-        ssh -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
+        # Menambahkan -i ~/.ssh/id_rsa agar SSH tahu persis file kunci mana yang harus dipakai
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
