@@ -37,6 +37,8 @@ jobs:
         host: ${{ secrets.EC2_PUBLIC_IP }}
         username: ec2-user
         key: ${{ secrets.EC2_SSH_KEY }}
+        port: 22
+        USE_SFTP: false # <-- Baris krusial buat ngatasin eror sftp: command not found
         script: |
           # Matikan container lama kalau ada, biar ga bentrok port
           docker stop web-app-container || true
