@@ -31,18 +31,18 @@ jobs:
     steps:
     - name: Kirim Perintah Deploy ke EC2
       env:
-        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        SSH_KEY_BASE64: ${{ secrets.EC2_SSH_KEY }}
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
         mkdir -p ~/.ssh
         
-        # Membersihkan karakter ghaib \r (Windows format) jika ada yang terbawa ke GitHub Secrets
-        echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
+        # Mengembalikan format key asli dari teks Base64 dengan akurasi 100%
+        echo "$SSH_KEY_BASE64" | base64 -d > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # Eksekusi SSH dengan timeout 15 detik agar tidak menggantung lama jika gagal
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -o ConnectTimeout=15 $USER@$HOST "
+        # Eksekusi SSH langsung
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "
           docker stop web-app-container || true && \
           docker rm web-app-container || true && \
           docker pull alka31/web-app-lks:latest && \
