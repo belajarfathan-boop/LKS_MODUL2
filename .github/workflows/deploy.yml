@@ -1,7 +1,48 @@
-- name: Kirim Perintah Deploy ke EC2
+name: CI/CD Pipeline LKS Modul 2
+
+# Pipeline ini bakal otomatis jalan SETIAP KALI lu ngelakuin 'git push' ke branch main/master
+on:
+  push:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Code dari GitHub
+      uses: actions/checkout@v4
+
+    - name: Login ke Docker Hub Otomatis
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build Docker Image & Push ke Docker Hub
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        # Menggunakan username 'alka31' dan nama image 'web-app-lks'
+        tags: alka31/web-app-lks:latest
+
+  deploy-to-ec2:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+    - name: Kirim Perintah Deploy ke EC2
       env:
+        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
-        # Menambahkan -i ~/.ssh/id_rsa agar SSH tahu persis file kunci mana yang harus dipakai
+        # 1. Buat folder .ssh dan simpan kunci dari GitHub Secrets ke id_rsa tanpa merusak format
+        mkdir -p ~/.ssh
+        cat << 'EOF' > ~/.ssh/id_rsa
+        ${{ secrets.EC2_SSH_KEY }}
+        EOF
+        chmod 600 ~/.ssh/id_rsa
+        
+        # 2. Jalankan perintah SSH menggunakan key yang sudah dibuat di atas
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
