@@ -36,12 +36,9 @@ jobs:
         USER: ec2-user
       run: |
         mkdir -p ~/.ssh
-        
-        # Menggunakan printf untuk memastikan isi key tertulis persis tanpa ada spasi rusak dari shell
         printf "%s" "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # Eksekusi perintah masuk ke AWS EC2
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "
           docker stop web-app-container || true && \
           docker rm web-app-container || true && \
