@@ -37,18 +37,10 @@ jobs:
       run: |
         # 1. Siapkan folder .ssh dan simpan kunci rahasia ke dalam runner
         mkdir -p ~/.ssh
-        echo "$SSH_KEY" > ~/.ssh/id_rsa
+        
+        # Menggunakan perlindungan printf untuk menjaga format baris kunci .pem
+        printf "%s" "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # 2. Kirim perintah deploy langsung ke server EC2 lewat SSH standar
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
-          # Matikan container lama kalau ada, biar ga bentrok port
-          docker stop web-app-container || true
-          docker rm web-app-container || true
-          
-          # Ambil image terbaru yang barusan di-push dari Docker Hub
-          docker pull alka31/web-app-lks:latest
-          
-          # Hidupkan aplikasinya di port 80
-          docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest
-        EOF 
+        # 2. Kirim perintah deploy langsung ke server EC2 (Format inline bebas eror EOF)
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest"
