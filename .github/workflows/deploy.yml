@@ -36,10 +36,26 @@ jobs:
         USER: ec2-user
       run: |
         mkdir -p ~/.ssh
-        
-        # printf dan tr -d \r akan membabat habis sisa-sisa bad character dari Windows
         printf "%s\n" "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # Eksekusi command langsung secara inline ke EC2
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
+        # Eksekusi perintah setup server + deploy container secara otomatis
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "
+          # 1. Update package manager dan instal Docker jika belum ada
+          if ! command -v docker &> /dev/null; then
+            echo 'Docker belum ada, menginstal via dnf/yum...'
+            sudo dnf update -y && \
+            sudo dnf install -y docker && \
+            sudo systemctl start docker && \
+            sudo systemctl enable docker && \
+            sudo usermod -aG docker ec2-user
+            # Berikan jeda waktu agar socket Docker siap digunakan
+            sleep 5
+          fi
+
+          # 2. Jalankan proses deployment seperti biasa (Gunakan sudo untuk memastikan izin akses aman)
+          sudo docker stop web-app-container || true && \
+          sudo docker rm web-app-container || true && \
+          sudo docker pull alka31/web-app-lks:latest && \
+          sudo docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest
+        " 
