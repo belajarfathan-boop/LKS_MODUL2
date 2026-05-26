@@ -1,6 +1,5 @@
 name: CI/CD Pipeline LKS Modul 2
 
-# Pipeline ini bakal otomatis jalan SETIAP KALI lu ngelakuin 'git push' ke branch main/master
 on:
   push:
     branches: [ "main", "master" ]
@@ -24,22 +23,25 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        # Menggunakan username 'alka31' dan nama image 'web-app-lks'
         tags: alka31/web-app-lks:latest
 
   deploy-to-ec2:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-    - name: Masuk ke EC2 AWS & Jalankan Container Baru
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_PUBLIC_IP }}
-        username: ec2-user
-        key: ${{ secrets.EC2_SSH_KEY }}
-        port: 22
-        use_sftp: false # <-- Sudah diganti ke huruf kecil biar valid
-        script: |
+    - name: Deploy ke EC2 Menggunakan SSH Native
+      env:
+        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        HOST: ${{ secrets.EC2_PUBLIC_IP }}
+        USER: ec2-user
+      run: |
+        # 1. Siapkan folder .ssh dan simpan kunci rahasia ke dalam runner
+        mkdir -p ~/.ssh
+        echo "$SSH_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        
+        # 2. Kirim perintah deploy langsung ke server EC2 lewat SSH standar
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST << 'EOF'
           # Matikan container lama kalau ada, biar ga bentrok port
           docker stop web-app-container || true
           docker rm web-app-container || true
@@ -47,5 +49,6 @@ jobs:
           # Ambil image terbaru yang barusan di-push dari Docker Hub
           docker pull alka31/web-app-lks:latest
           
-          # Hidupkan aplikasinya di port 80 (biar langsung bisa diakses lewat IP Publik)
-          docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest 
+          # Hidupkan aplikasinya di port 80
+          docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest
+        EOF 
