@@ -31,20 +31,15 @@ jobs:
     steps:
     - name: Kirim Perintah Deploy ke EC2
       env:
-        SSH_KEY_BASE64: ${{ secrets.EC2_SSH_KEY }}
+        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
         mkdir -p ~/.ssh
         
-        # Mengembalikan format key asli dari teks Base64 dengan akurasi 100%
-        echo "$SSH_KEY_BASE64" | base64 -d > ~/.ssh/id_rsa
+        # printf dan tr -d \r akan membabat habis sisa-sisa bad character dari Windows
+        printf "%s\n" "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # Eksekusi SSH langsung
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "
-          docker stop web-app-container || true && \
-          docker rm web-app-container || true && \
-          docker pull alka31/web-app-lks:latest && \
-          docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest
-        " 
+        # Eksekusi command langsung secara inline ke EC2
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
