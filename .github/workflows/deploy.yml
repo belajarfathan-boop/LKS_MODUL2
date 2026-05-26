@@ -1,6 +1,5 @@
 name: CI/CD Pipeline LKS Modul 2
 
-# Pipeline ini bakal otomatis jalan SETIAP KALI lu ngelakuin 'git push' ke branch main/master
 on:
   push:
     branches: [ "main", "master" ]
@@ -24,7 +23,6 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        # Menggunakan username 'alka31' dan nama image 'web-app-lks'
         tags: alka31/web-app-lks:latest
 
   deploy-to-ec2:
@@ -37,12 +35,12 @@ jobs:
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
-        # 1. Buat folder .ssh dan simpan kunci dari GitHub Secrets ke id_rsa tanpa merusak format
+        # 1. Buat folder .ssh
         mkdir -p ~/.ssh
-        cat << 'EOF' > ~/.ssh/id_rsa
-        ${{ secrets.EC2_SSH_KEY }}
-        EOF
+        
+        # 2. Cetak langsung variabel env ke file tanpa trik heredoc (bebas dari eror spasi YAML)
+        echo "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # 2. Jalankan perintah SSH menggunakan key yang sudah dibuat di atas
+        # 3. Jalankan perintah SSH
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
