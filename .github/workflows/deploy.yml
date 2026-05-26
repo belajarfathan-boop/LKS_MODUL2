@@ -35,12 +35,16 @@ jobs:
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
-        # 1. Buat folder .ssh
         mkdir -p ~/.ssh
         
-        # 2. Cetak langsung variabel env ke file tanpa trik heredoc (bebas dari eror spasi YAML)
-        echo "$SSH_KEY" > ~/.ssh/id_rsa
+        # Menggunakan printf untuk memastikan isi key tertulis persis tanpa ada spasi rusak dari shell
+        printf "%s" "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # 3. Jalankan perintah SSH
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
+        # Eksekusi perintah masuk ke AWS EC2
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "
+          docker stop web-app-container || true && \
+          docker rm web-app-container || true && \
+          docker pull alka31/web-app-lks:latest && \
+          docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest
+        " 
