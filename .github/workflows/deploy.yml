@@ -31,16 +31,16 @@ jobs:
     steps:
     - name: Deploy ke EC2 Menggunakan SSH Native
       env:
-        SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        # Trik tanda pipa | di bawah ini memaksa format teks baris per baris dibaca utuh sempurna
+        SSH_KEY: |
+          ${{ secrets.EC2_SSH_KEY }}
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
-        # 1. Siapkan folder .ssh
+        # 1. Siapkan folder .ssh dan generate file id_rsa
         mkdir -p ~/.ssh
-        
-        # 2. Decode kunci dari Base64 kembali menjadi file .pem yang utuh sempurna
-        echo "$SSH_KEY" | base64 -d > ~/.ssh/id_rsa
+        echo "$SSH_KEY" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # 3. Kirim perintah deploy langsung ke server EC2
+        # 2. Kirim perintah deploy langsung ke server EC2
         ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
