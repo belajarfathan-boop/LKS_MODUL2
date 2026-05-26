@@ -1,0 +1,12 @@
+{
+  "name": "web-app-lks",
+  "version": "1.0.0",
+  "description": "Aplikasi Web LKS Modul 2",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+} 
