@@ -29,18 +29,18 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-    - name: Deploy ke EC2 Menggunakan SSH Native
+    # Menggunakan action khusus untuk mengonfigurasi kunci SSH dengan aman dan otomatis rapi
+    - name: Install SSH Key Otomatis
+      uses: shimataro/ssh-key-action@v2
+      with:
+        key: ${{ secrets.EC2_SSH_KEY }}
+        name: id_rsa
+        known_hosts: unnecessary
+        if_key_exists: replace
+
+    - name: Kirim Perintah Deploy ke EC2
       env:
-        # Trik tanda pipa | di bawah ini memaksa format teks baris per baris dibaca utuh sempurna
-        SSH_KEY: |
-          ${{ secrets.EC2_SSH_KEY }}
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
-        # 1. Siapkan folder .ssh dan generate file id_rsa
-        mkdir -p ~/.ssh
-        echo "$SSH_KEY" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        
-        # 2. Kirim perintah deploy langsung ke server EC2
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
+        ssh -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
