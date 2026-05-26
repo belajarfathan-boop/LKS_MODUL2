@@ -35,13 +35,13 @@ jobs:
         HOST: ${{ secrets.EC2_PUBLIC_IP }}
         USER: ec2-user
       run: |
-        # 1. Buat folder .ssh jika belum ada
         mkdir -p ~/.ssh
-        
-        # 2. Ambil kunci langsung dari env dan pastikan ada karakter ganti baris di akhir file
         echo "$SSH_KEY" > ~/.ssh/id_rsa
-        echo "" >> ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
         
-        # 3. Jalankan perintah SSH ke AWS EC2 secara inline
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "docker stop web-app-container || true && docker rm web-app-container || true && docker pull alka31/web-app-lks:latest && docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest" 
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no $USER@$HOST "
+          docker stop web-app-container || true && \
+          docker rm web-app-container || true && \
+          docker pull alka31/web-app-lks:latest && \
+          docker run -d --name web-app-container -p 80:3000 alka31/web-app-lks:latest
+        " 
